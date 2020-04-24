@@ -20,10 +20,59 @@ admin.initializeApp({
   databaseURL: process.env.FB_DATABASE_URL,
 });
 
-const getUser = async (email) => {};
+const db = admin.database();
 
-const createUser = async (req, res) => {};
+const queryDB = async (key) => {
+  const ref = db.ref(key)
+  let data = false;
+  await ref.once(
+    'value',
+    (snapshot) => {
+      data = snapshot.val();
+    },
+    (err) => {
+      console.log('err',err)
+    }
+  )
+
+  return data;
+}
+
+const getUser = async (email) => {
+  const data = (await queryDB('appUser')) || {};
+  const dataValue= Object.keys(data)
+    .map(item => data[item])
+    .find(obj => obj.email === email)
+
+  return dataValue || false;
+};
+
+const createUser = async (req, res) => {
+  const returningUser = (await getUser(req.body.email));
+  console.log('returningUser',returningUser)
+  if (returningUser) {
+    res.status(200).json({
+      status: 200,
+      data: req.body,
+      message: 'returning user',
+    });
+    return;
+  } else {
+    const appUserRef= db.ref('appUser');
+
+    appUserRef.push(req.body).then(() => {
+      res.status(200).json({
+        status: 200,
+        data: req.body,
+        message: 'new user',
+      });
+    });
+    return;
+  };
+
+};
 
 module.exports = {
   createUser,
+  getUser,
 };

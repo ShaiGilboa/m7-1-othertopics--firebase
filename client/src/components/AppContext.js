@@ -1,9 +1,102 @@
 import React, { createContext, useEffect, useState } from 'react';
+import withFirebaseAuth from 'react-with-firebase-auth';
+import * as firebase from 'firebase';
+import 'firebase/auth';
 
 export const AppContext = createContext(null);
 
-const AppProvider = ({ children }) => {
-  return <AppContext.Provider value={{}}>{children}</AppContext.Provider>;
+const firebaseConfig = {
+    apiKey: "AIzaSyCxjmpp1sAy-b9Bn4PWf14T1qndYS29qIc",
+    authDomain: "user-app-d6921.firebaseapp.com",
+    databaseURL: "https://user-app-d6921.firebaseio.com",
+    project_id: "user-app-d6921",
+    storageBucket: "user-app-d6921.appspot.com",
+    messagingSenderId: "327594813192",
+    appId: "1:327594813192:web:ea4ddf350dd2491aa1aebd"
+  };
+
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const firebaseAppAuth = firebaseApp.auth();
+
+const providers = {
+  googleProvider: new firebase.auth.GoogleAuthProvider(),
 };
 
-export default AppProvider;
+const AppProvider = ({ children, signInWithGoogle, signOut, user }) => {
+  const [appUser, setAppUser] = useState({});
+  const [message, setMessage] = useState('');
+  const [change, setChange] = useState(0)
+  const handleSignOut= () => {
+    signOut();
+    setAppUser({});
+  }
+
+  React.useEffect(() => {
+    // this connects us to the database, specifically the appUsers obj
+    const appUsersRef = firebase.database().ref(`appUser`);
+    appUsersRef.on('value', (snapshot) => {
+      // console.log('snapshot',snapshot)
+      // console.log('snapshot.exists()',snapshot.exists())
+      const appUsers = snapshot.val();
+      // if we had a state item that was tracking allUsers, we would update it here.
+      // setAllUsers(appUsers);
+      // console.log('appUsers',appUsers)
+      let newchange = change+1;
+      console.log('change',change)
+      console.log('newchange',newchange)
+      setChange(newchange)
+    })
+
+    return () => {
+      // this is where we need to turn off the connection. It's always good to clean up after oursleves.
+      const appUsersRef = firebase.database().ref(`appUsers`);
+      appUsersRef.off();
+    };
+  },[])
+
+  useEffect(()=>{
+    console.log('useEffect change');
+  },[change])
+  useEffect(() => {
+    if (user){
+      // setAppUser({
+      //   displayName: user.displayName,
+      //   email: user.email,
+      //   photoURL: user.photoURL,
+      // });
+      fetch(`/users`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+        }),
+      })
+        .then(res => res.json())
+        .then(json => {
+          setAppUser(json.data);
+          setMessage(json.message);
+        })
+    }
+  }, [user]);
+
+  return (
+    <AppContext.Provider value={{
+      appUser,
+      signInWithGoogle,
+      handleSignOut,
+      message,
+      change,
+      }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export default withFirebaseAuth({
+    providers,
+    firebaseAppAuth,
+  })(AppProvider);

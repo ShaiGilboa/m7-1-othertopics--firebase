@@ -13,9 +13,11 @@ const firebaseConfig = {
   appId: '1:849093390522:web:55ab1d7d6e2da7b0961283',
 };
 
+
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 const firebaseAppAuth = firebaseApp.auth();
 
+// here you can add alternative sign-in methods
 const providers = {
   googleProvider: new firebase.auth.GoogleAuthProvider(),
 };
@@ -33,6 +35,7 @@ const AppProvider = ({ children, signInWithGoogle, signOut, user }) => {
 
   useEffect(() => {
     if (user) {
+      // console.log('user',user)
       fetch(`/users`, {
         method: 'post',
         headers: {
