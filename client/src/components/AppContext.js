@@ -28,23 +28,44 @@ const AppProvider = ({ children, signInWithGoogle, signOut, user }) => {
   const [change, setChange] = useState(0)
   const handleSignOut= () => {
     signOut();
-    setAppUser({});
+    console.log('appUser',appUser)
+    const body = {
+      email: appUser.email,
+    }
+    fetch('/signOut', {
+      method: 'PUT',
+      headers: {
+          'Content-Type': 'application/json',
+        },
+      body: JSON.stringify(body),
+    })
+    .then(res=>{
+      if(res.status===204)setAppUser({})
+      })
+    // .then(status=>{
+    //   console.log('status',status)
+    //   setAppUser({});
+    // })
   }
 
   React.useEffect(() => {
     // this connects us to the database, specifically the appUsers obj
-    const appUsersRef = firebase.database().ref(`appUser`);
+    const appUsersRef = firebase.database().ref(`appUsers`);
     appUsersRef.on('value', (snapshot) => {
       // console.log('snapshot',snapshot)
       // console.log('snapshot.exists()',snapshot.exists())
       const appUsers = snapshot.val();
       // if we had a state item that was tracking allUsers, we would update it here.
       // setAllUsers(appUsers);
+      if(Object.keys(appUsers).length !== change) {
+        // console.log('change',change)
+        // console.log('Object.keys(appUsers)',Object.keys(appUsers).length)
+        setChange(Object.keys(appUsers).length)
+        }
       // console.log('appUsers',appUsers)
       let newchange = change+1;
-      console.log('change',change)
-      console.log('newchange',newchange)
-      setChange(newchange)
+      // console.log('newchange',newchange)
+      // setChange(newchange)
     })
 
     return () => {
@@ -52,18 +73,16 @@ const AppProvider = ({ children, signInWithGoogle, signOut, user }) => {
       const appUsersRef = firebase.database().ref(`appUsers`);
       appUsersRef.off();
     };
-  },[])
+  },[change])
 
   useEffect(()=>{
     console.log('useEffect change');
   },[change])
+
   useEffect(() => {
     if (user){
-      // setAppUser({
-      //   displayName: user.displayName,
-      //   email: user.email,
-      //   photoURL: user.photoURL,
-      // });
+      console.log('ignin');
+      
       fetch(`/users`, {
         method: "POST",
         headers: {
@@ -77,6 +96,7 @@ const AppProvider = ({ children, signInWithGoogle, signOut, user }) => {
       })
         .then(res => res.json())
         .then(json => {
+          console.log('json',json)
           setAppUser(json.data);
           setMessage(json.message);
         })

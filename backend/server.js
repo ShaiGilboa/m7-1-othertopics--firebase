@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const {
   createUser,
   getUser,
+  signOutHandler,
   } = require('./handlers');
 
 require('dotenv').config();
@@ -29,5 +30,6 @@ express()
 
   .get('/users', getUser)
   .post('/users', createUser)
+  .put('/signOut', signOutHandler)
 
   .listen(PORT, () => console.log(`Listening on port ${PORT}`));
